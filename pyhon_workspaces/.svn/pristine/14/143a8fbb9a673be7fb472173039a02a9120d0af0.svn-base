@@ -1,0 +1,41 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:'
+xmlOld = 'old.xml'
+xmlNew = 'new.xml'
+
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etNew = ET.XML(open(exportDir + '/' + xmlNew, 'rb').read())
+etDiff = etNew
+
+for etNewCollection in etNew.findall('collection'):
+    for etOldCollection in etOld.findall('collection'):
+        if etNewCollection.attrib.get('id') == etOldCollection.attrib.get('id'):
+            try:
+                etDiff.remove(etDiff.find('collection[@id="' + etNewCollection.attrib.get('id') + '"]'))
+            except:
+                pass
+            for etNewBundle in etNewCollection.findall('bundle/bundle'):
+                for etOldBundle in etOldCollection.findall('bundle/bundle'):
+                    if etNewBundle.attrib.get('id') == etOldBundle.attrib.get('id'):
+                        try:
+                            etDiff.remove(etDiff.find('collection[@id="' + etNewCollection.attrib.get('id') + '"]/bundle/bundle[@id="' + etNewBundle.attrib.get('id') + '"]'))
+                        except:
+                            pass
+                        for etNewBaseContent in etNewBundle.findall('content/baseContent'):
+                            for etOldBaseContent in etOldBundle.findall('content/baseContent'):
+                                if etNewBaseContent.attrib.get('id') == etOldBaseContent.attrib.get('id'):
+                                    try:
+                                        etDiff.remove(etDiff.find('collection[@id="' + etNewCollection.attrib.get('id') + '"]/bundle/bundle[@id="' + etNewBundle.attrib.get('id') + '"]/baseContent[@id="' + etNewBaseContent.attrib.get('id') + '"]'))
+                                    except:
+                                        pass
+print ET.tostring(etDiff)
+

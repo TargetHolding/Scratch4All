@@ -1,0 +1,88 @@
+import os.path
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+import sys
+
+
+# Give existing Workspace title
+parentWorkspaceTitle = 'Monk 0'
+
+# Give collection, bundle hierarchy
+# Format:
+# '<xml>'
+#   '<collection name="name1">'
+#     '<bundle name="name2"/>'
+#   '</collection>'
+# '</xml>'
+xmlHierarchy = ('<xml>'
+                   '<collection title="KdK" description="Kabinet der Koningin">'
+                     '<bundle name="navis-NL-HaNA_2.02.04_3960"/>'
+                     '<bundle name="navis-NL-HaNA_2.02.04_3965"/>'
+                     '<bundle name="navis-NL-HaNA_2.02.14_7813"/>'
+                   '</collection>'
+                   '<collection title="SB" description="Scheepsbank">'
+                     '<bundle name="SAL7453"/>'
+                   '</collection>'
+                 '</xml>'
+                )
+
+
+
+importDirPath = 'D:/BOOKS/'
+
+scanExtentsion = '.jpg'
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+response = cStringIO.StringIO()
+
+# Authentication
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, login_url)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+# Get Workspace id based on Workspace title
+c.setopt(pycurl.POST, 0)
+c.setopt(pycurl.URL, api_url + 'workSpace')
+response = cStringIO.StringIO()
+c.setopt(pycurl.WRITEFUNCTION, response.write)
+c.perform()
+etWorkSpaces = ET.XML(response.getvalue())
+for etWorkSpace in etWorkSpaces.findall('workSpace'):
+    if etWorkSpace.find('title').text == parentWorkspaceTitle:
+        workSpaceId = etWorkSpace.attrib.get('id')
+
+# Make collections based on xmlHierarchy
+etHierarchy = ET.XML(xmlHierarchy)
+for etCollection in etHierarchy.findall('collection'): 
+    c.setopt(pycurl.POST, 1)
+    c.setopt(pycurl.URL, api_url + 'collection')
+    xml = ('<collection>'
+             '<ownerWorkSpace id="' + workSpaceId + '"/>'
+             '<title>' + etCollection.attrib.get('title') + '</title>'
+             '<description>' + etCollection.attrib.get('description') + '</description>'
+           '</collection>')
+    
+    
+    c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/xml'])
+    c.setopt(pycurl.POSTFIELDS, xml)
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    print response.getvalue()
+    sys.exit(0)
+    
+    
+#    for etBundle in etCollection.findall('bundle'):
+#        print "\t" + etBundle.attrib.get('name')    
+
+
+#for item in os.listdir(importDirPath):
+#    if os.path.isdir(item):
+#        print item

@@ -1,0 +1,86 @@
+<?php 
+error_reporting(-1);
+require 'users_model.php';
+require 'include/navis-id2path.php';
+session_start();
+$_SESSION['location'] = 'users_view_admin_panel.php';
+$um = new userModel();
+$message = '';
+if (isset($_SESSION['message']))
+{
+  $message = $_SESSION['message'];
+  unset($_SESSION['message']);
+}
+?>
+<!DOCTYPE HTML PUBLIC '-//W3C//Dtd XHTML 1.0 Transitional//EN>
+<html>
+  <head>
+    <title>Admin panel</title>
+    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
+    <link rel='stylesheet' type='text/css' href='style.css'/>
+  </head>
+  <body>
+    <h1>Admin panel</h1>
+    <p>logged is as: "<?php print $_SESSION['username']; ?>"</p>
+    <fieldset style='float: left;'>
+      <legend>users</legend>
+      <table class='tbl'>
+        <tr>
+          <th class='tbl' style='text-align:left;'>username</th>
+          <th class='tbl' style='text-align:left;'>permission</th>
+          <th class='tbl' style='text-align:left;'>institutions</th>
+          <th class='tbl' style='text-align:left;'>collections</th>
+          <th class='tbl' style='text-align:left;'>books</th>
+        </tr>
+<?php foreach ($um->permissions as $username => $details){?>
+        <tr>
+          <form action='users_view_admin_details.php' method='POST'>
+            <td class='tbl'><input style='width:100%; text-align:left;' type='submit' name='target_username' value='<?php print $username; ?>' title='View and edit details from user: "<?php print $username; ?>"' /></td>
+          </form>
+          <td class='tbl'><?php print $um->convert_permission($details->permissions->global_permission); ?></td>
+          <td class='tbl'><?php print implode(', ', $um->permissions->xpath($username . '/permissions/institutions/institution/institution_id'));?></td>
+          <td class='tbl'><?php print implode(', ', $um->permissions->xpath($username . '/permissions/collections/collection/collection_id'));?></td>
+          <td class='tbl'><?php print implode(', ', $um->permissions->xpath($username . '/permissions/books/book/book_id'));?></td>
+<?php }?>
+      </table>
+    </fieldset>
+
+
+
+    <br style='clear:both;'>
+    <fieldset style='float: left;'>
+      <legend>general</legend>
+      <table>
+        <form action='users_controller.php' method='POST'>
+        <tr>
+          <td></td>
+          <td></td>
+          <td><input style='width: 100%;' type='submit' name='action' value='Logout'/></td>
+        </tr>
+        </form>
+        <form action='users_view_admin_panel_all.php' method='POST'>
+        <tr>
+          <td></td>
+          <td></td>
+          <td><input style='width: 100%;' type='submit' value='Admin all-in-one' /></td>
+        </tr>
+        </form>
+        <form action='users_controller.php' method='POST'>
+        <tr><td colspan='3'><i>Add user</i></td></tr>
+        <tr>
+          <td>Username</td>
+          <td><input style='width: 100%;' type='text' name='target_username'/></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Password</td>
+          <td><input style='width: 100%;' type='password' name='target_password'/></td>
+          <td><input style='width: 100%;' type='submit' name='action' value='Add user' /></td>
+        </tr>
+        <tr><td colspan='3'><i>Message</i></td></tr>
+        <tr><td colspan='3'><input style='width: 100%;' type='text' readonly='readonly' title='<?php print $message; ?>' value='<?php print $message; ?>'/></td></tr>
+        </form>
+      </table>
+    </fieldset>
+  </body>
+</html>

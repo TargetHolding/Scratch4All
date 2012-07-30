@@ -1,0 +1,83 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:/DIFF'
+xmlOld = 'old.xml'
+xmlNew = 'new.xml'
+xmlUser = 'user.xml'
+
+def addCollection(collectionId, strDownload='true'):
+    try:
+        etUser.find('collection[@id="' + collectionId + '"]').attrib.get('id')
+    except:
+        etUser.append(ET.XML('<collection id="' + collectionId + '" download="' + strDownload + '" title="' + etNew.find('collection[@id="' + collectionId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/description').text + '"></collection>'))
+
+def addBundle(collectionId, bundleId, strDownload='true'):
+    addCollection(collectionId, 'false')
+    try:
+        etUser.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]').attrib.get('id')
+    except:
+        etUser.find('collection[@id="' + collectionId + '"]').append(ET.XML('<bundle id="' + bundleId + '" download="' + strDownload + '" title="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/description').text + '"></bundle>'))
+    
+def addBaseContent(collectionId, bundleId, baseContentId):
+    addCollection(collectionId, 'false')
+    addBundle(collectionId, bundleId, 'false')
+    etUser.find('collection[@id="' + collectionId + '"]/bundle[@id="' + bundleId + '"]').append(ET.XML('<baseContent id="' + baseContentId + '" download="true" title="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/content/baseContent[@id="' + baseContentId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/content/baseContent[@id="' + baseContentId + '"]/description').text + '"></baseContent>'))
+
+def userContinue(question):
+    userInput = raw_input(question + " [y/n]: ")
+    if userInput == 'y':
+        return
+    elif userInput == 'n':
+        print 'User aborted.'
+        sys.exit(0)
+    else:
+        userContinue()
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etNew = ET.XML(open(exportDir + '/' + xmlNew, 'rb').read())
+etUser = ET.XML('<list></list>')
+
+oldCollectionIds = []
+oldBundleIds = []
+oldBaseContentIds = []
+for etOldCollection in etOld.findall('collection'):
+    oldCollectionIds.append(etOldCollection.attrib.get('id'))
+for etOldBundle in etOld.findall('collection/bundle/bundle'):
+    oldBundleIds.append(etOldBundle.attrib.get('id'))
+for etOldBaseContent in etOld.findall('collection/bundle/bundle/content/baseContent'):
+    oldBaseContentIds.append(etOldBaseContent.attrib.get('id'))
+    
+for etNewCollection in etNew.findall('collection'):
+    collectionId = etNewCollection.attrib.get('id')
+    if (collectionId not in oldCollectionIds):
+        addCollection(collectionId)
+for etNewBundle in etNew.findall('collection/bundle/bundle'):
+    bundleId = etNewBundle.attrib.get('id')
+    if (bundleId not in oldBundleIds):
+        collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+        addBundle(collectionId, bundleId)
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    baseContentId = etNewBaseContent.attrib.get('id')
+    if (baseContentId not in oldBaseContentIds):
+        bundleId = etNewBaseContent.find('bundle/bundle').attrib.get('id')
+        for etNewBundle in etNew.findall('collection/bundle/bundle'):
+            if (etNewBundle.attrib.get('id') in bundleId):
+                collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+                addBaseContent(collectionId, bundleId, baseContentId)
+
+open(exportDir + '/' + xmlUser, 'wb').write(xml.dom.minidom.parseString(ET.tostring(etUser)).toprettyxml())
+print 'The difference XML is saved to: "' + exportDir + '/' + xmlUser + '".'
+print 'In this XML change the attribute "download="true"" into "download="false"" if the download for this object is not required.'
+userContinue("Continue download using: " + exportDir + '/' + xmlUser + "?")
+print 'TODO'
+
+
+
+

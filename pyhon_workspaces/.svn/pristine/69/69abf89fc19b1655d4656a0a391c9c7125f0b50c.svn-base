@@ -1,0 +1,67 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:/DIFF'
+xmlOld = 'old.xml'
+xmlNew = 'new.xml'
+
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etNew = ET.XML(open(exportDir + '/' + xmlNew, 'rb').read())
+etUser = ET.XML('<list></list>')
+
+
+oldCollectionIds = []
+oldBundleIds = []
+oldBaseContentIds = []
+for etOldCollection in etOld.findall('collection'):
+    oldCollectionIds.append(etOldCollection.attrib.get('id'))
+for etOldBundle in etOld.findall('collection/bundle/bundle'):
+    oldBundleIds.append(etOldBundle.attrib.get('id'))
+for etOldBaseContent in etOld.findall('collection/bundle/bundle/content/baseContent'):
+    oldBaseContentIds.append(etOldBaseContent.attrib.get('id'))
+#for etNewCollection in etNew.findall('collection'):
+#    if (etNewCollection.attrib.get('id') in oldCollectionIds):
+#        etNewCollection.attrib['download'] = 'false'
+#    else:
+#        etNewCollection.attrib['download'] = 'true'
+#for etNewBundle in etNew.findall('collection/bundle/bundle'):
+#    if (etNewBundle.attrib.get('id') in oldBundleIds):
+#        etNewBundle.attrib['download'] = 'false'
+#    else:
+#        etNewBundle.attrib['download'] = 'true'
+#for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+#    if (etNewBaseContent.attrib.get('id') in oldBaseContentIds):
+#        etNewBaseContent.attrib['download'] = 'false'
+#    else:
+#        etNewBaseContent.attrib['download'] = 'true'
+
+
+
+
+for etNewCollection in etNew.findall('collection'):
+    collectionId = etNewCollection.attrib.get('id')
+    if (collectionId not in oldCollectionIds):
+        print 'Collection path: ' + collectionId + ' xml: ' + ET.tostring(etNewCollection)
+for etNewBundle in etNew.findall('collection/bundle/bundle'):
+    bundleId = etNewBundle.attrib.get('id')
+    if (bundleId not in oldBundleIds):
+        collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+        print 'Bundle path: ' + collectionId + '/' + bundleId + ' xml: ' + ET.tostring(etNewBundle)
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    baseContentId = etNewBaseContent.attrib.get('id')
+    if (baseContentId not in oldBaseContentIds):
+        bundleId = etNewBaseContent.find('bundle/bundle').attrib.get('id')
+        for etNewBundle in etNew.findall('collection/bundle/bundle'):
+            if (etNewBundle.attrib.get('id') in bundleId):
+                collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+                print 'BaseContent path: ' + collectionId + '/' + bundleId + '/' + baseContentId + ' xml: ' + ET.tostring(etNewBaseContent)
+                
+                
+print ET.tostring(etUser)

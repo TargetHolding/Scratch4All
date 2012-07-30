@@ -1,0 +1,243 @@
+<?php
+error_reporting(-1);
+require 'users_model.php';
+require 'include/navis-id2path.php';
+session_start();
+$_SESSION['location'] = 'users_view_admin_panel.php';
+$um = new um();
+
+?>
+<!DOCTYPE HTML PUBLIC '-//W3C//Dtd XHTML 1.0 Transitional//EN>
+<html>
+  <head>
+    <title>User Management GUI</title>
+    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
+    <link rel='stylesheet' type='text/css' href='../include/ingest_basic_style.css'/>
+    <style type='text/css'>
+	  body
+      {
+        font: 12px arial, helvetica, sans-serif;
+      }
+      form
+      {
+        margin: 0px;
+      }
+      table, td, th
+      {
+        border-width: 1px;
+        background-color: white;
+        border-collapse: collapse;
+        border-style: solid;
+        border-color: black;
+
+      }
+      .link_button_red
+      {
+        color:             red;
+        background-color:  white;
+        border-width:      0;
+        cursor:            pointer;
+        padding:           0;
+      }
+
+    </style>
+  </head>
+  <body>
+    <p><?php if (isset($_SESSION['message'])) print $_SESSION['message']; unset($_SESSION['message']);?></p>
+    <p><?php print $_SESSION['username']; ?></p>
+    <form action='users_controller.php' method='POST'>
+      <input type='submit' name='action' value='logout' />
+    </form>
+    <table>
+      <tr>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Global<br>permissions</th>
+        <th>Subfields</th>
+      </tr>
+<?php foreach ($um->up as $username => $details){?>
+      <tr>
+        <td>
+          <!--USERNAME-->
+          <form action='users_controller.php' method='POST'>
+            <input type='hidden' name='action' value='delete_username'/>
+            <input class='link_button_red' type='submit' name='target_username' value='<?php print $username; ?>' />
+          </form>
+        </td>
+        <td>
+          <!--PASSWORD-->
+          <form action='users_controller.php' method='POST'>
+            <fieldset>
+            <legend>Password</legend>
+            <input type='hidden' name='action' value='change_password'/>
+            <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+            <input type='password' name='target_password' /><br>
+            <input type='password' name='target_password2' />
+            <input type='submit' value='set' />
+            </fieldset>
+          </form>
+        </td>
+        <td>
+          <!--GLOBAL PERMISSION-->
+          <form action='users_controller.php' method='POST'>
+            <input type='hidden' name='action' value='change_global_permission'/>
+            <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+            <input style='width: 35px;' type='input' name='global_permission' value='<?php print $details['global_permission']; ?>'/>
+            <input type='submit' value='set' />
+          </form>
+        </td>
+        <td>
+          <!--OWNERS-->
+          <table>
+<?php if (isset($details['owners_permissions'])){
+  foreach ($details['owners_permissions'] as $owner_id => $owner_permissions){?>
+            <tr>
+              <td>
+                <!--OWNER ID-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='delete_owner_id'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input title='Owner ID' class='link_button_red' type='submit' name='owner_id' value='<?php print $owner_id; ?>'/>
+                </form>
+              </td>
+              <td>
+                <!--OWNER PERMISSION-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='change_owner_permission'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input type='hidden' name='owner_id' value='<?php print $owner_id; ?>'/>
+                  <input title='Owner permission' style='width: 35px;' type='input' name='owner_permission' value='<?php print $owner_permissions['owner_permission']; ?>'/>
+                  <input title='Set owner permission' type='submit' value='set' />
+                </form>
+              </td>
+            </tr>
+<?php }}
+if (isset($details['collections_permissions'])){
+  foreach ($details['collections_permissions'] as $collection_id => $collection_permissions){?>
+            <tr>
+              <td>
+                <!--COLLECTION ID-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='delete_collection_id'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input title='Collection ID' class='link_button_red' type='submit' name='collection_id' value='<?php print $collection_id; ?>'/>
+                </form>
+              </td>
+              <td>
+                <!--COLLECTION PERMISSION-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='change_collection_permission'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input type='hidden' name='collection_id' value='<?php print $collection_id; ?>'/>
+                  <input title='Collection permission' style='width: 35px;' type='input' name='collection_permission' value='<?php print $collection_permissions['collection_permission']; ?>'/>
+                  <input title='Set collection permission' type='submit' value='set' />
+                </form>
+              </td>
+            </tr>
+<?php }}
+if (isset($details['books_permissions'])){
+  foreach ($details['books_permissions'] as $book_id => $book_permissions){?>
+            <tr>
+              <td>
+                <!--BOOK ID-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='delete_book_id'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input title='Book ID' class='link_button_red' type='submit' name='book_id' value='<?php print $book_id; ?>'/>
+                </form>
+              </td>
+              <td>
+                <!--BOOK PERMISSION-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='change_book_permission'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input type='hidden' name='book_id' value='<?php print $book_id; ?>'/>
+                  <input title='Book permission' style='width: 35px;' type='input' name='book_permission' value='<?php print $book_permissions['book_permission']; ?>'/>
+                  <input title='Set book permission' type='submit' value='set' />
+                </form>
+              </td>
+              <td>
+                <!--PAGE FROM-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='change_page_from'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input type='hidden' name='book_id' value='<?php print $book_id; ?>'/>
+                  <input title='Book page from' style='width: 35px;' type='input' name='page_from' value='<?php print $book_permissions['page_from']; ?>'/>
+                  <input title='Set book page from' type='submit' value='set' />
+                </form>
+              </td>
+              <td>
+                <!--PAGE TO-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='change_page_to'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input type='hidden' name='book_id' value='<?php print $book_id; ?>'/>
+                  <input title='Book page to' style='width: 35px;' type='input' name='page_to' value='<?php print $book_permissions['page_to']; ?>'/>
+                  <input title='Set book page to' type='submit' value='set' />
+                </form>
+              </td>
+            </tr>
+<?php }}?>
+            <tr>
+              <td colspan='99'>
+                <!--ADD OWNER-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='add_owner'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input style='width:300px;' type='text' name='owner_id'/>
+                  <input style='width:110px;' type='submit' value='add owner' />
+                </form>
+                <!--ADD COLLECTION-->
+                <form action='users_controller.php' method='POST'>
+                  <input type='hidden' name='action' value='add_collection'/>
+                  <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                  <input style='width:300px;' type='text' name='collection_id'/>
+                  <input style='width:110px;' type='submit' value='add collection' />
+                </form>
+                <!--ADD BOOK-->
+                <form action='users_controller.php' method='POST'>
+                  <select name='book_id'>
+                    <option selected ></option>
+<?php foreach (bookdirlist () as $bookdir){
+  $book_id = bookid(sprintf(bookdir2linepattern($bookdir), 0000, 000));?>
+                    <option style='width:273px;' title='<?php print $book_id ?>' value='<?php print $book_id ?>'><?php print $book_id ?></option>
+<?php }?>
+                    <input type='hidden' name='action' value='add_book'/>
+                    <input type='hidden' name='target_username' value='<?php print $username; ?>'/>
+                    <input style='width:110px;' type='submit' value='add book' />
+                  </select>
+                </form>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+<?php }?>
+    </table>
+    <br><br>
+    <!--ADD USER-->
+    <form action='users_controller.php' method='POST'>
+      <fieldset>
+        <legend>add user</legend>
+        <input type='hidden' name='action' value='add_user'/>
+        <p>username</p><input type='text' name='target_username'/>
+        <p>password</p><input type='password' name='target_password'/>
+        <input type='submit' value='add user' />
+      </fieldset>
+    </form>
+
+
+
+    <form action='users_controller.php' method='POST'>
+      <fieldset>
+        <legend>POST custom</legend>
+        <p>action</p><input type='text' name='action'/>
+        <p>target user</p><input type='text' name='target_username'/>
+        <input type='submit' value='POST' />
+      </fieldset>
+    </form>
+
+
+  </body>
+</html>
+

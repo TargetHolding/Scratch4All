@@ -1,5 +1,6 @@
 <?php
 
+
 error_reporting(-1);
 
 $time['total_starttime'] = microtime(true);

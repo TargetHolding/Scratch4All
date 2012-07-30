@@ -1,0 +1,113 @@
+import os
+import sys
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api'
+username = 'instituut01@admin.nl'
+password = 'qwerty'
+baseDir = 'd:/workspace'
+localRepository = 'local.xml'
+
+c = pycurl.Curl()
+etLocalRepository = ET.XML('<list></list>')
+
+def init():
+    # Make export directory.
+    if not os.path.exists(baseDir):
+        os.makedirs(baseDir)
+    # Open local repository.
+    if os.path.isfile(baseDir + '/' + localRepository):
+        etLocalRepository = ET.XML(open(baseDir + '/' + localRepository, 'rb').read())
+    # Authentication.
+    c.setopt(pycurl.COOKIEFILE, '')
+    c.setopt(pycurl.POST, 1)
+    c.setopt(pycurl.URL, loginUrl)
+    c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+    c.perform()
+
+if '--help' in sys.argv[1:] or len(sys.argv[1:]) == 0:
+    print (
+           '--collections, --bundles, --content\n'
+           '    Show collections, bundles and or baseContents.\n\n'
+           '--parent\n'
+           '    Extend parent ID with title and description.\n\n'
+           '--not_published\n'
+           '    Include not published items.\n\n'
+           '--no_filter\n'
+           '    Ignore local repository.\n\n'
+          )
+    sys.exit(0)
+
+# Request all collections.
+if '--collections' in sys.argv[1:]:
+    init()
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, apiUrl + '/collection')
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    etCollections = ET.XML(response.getvalue())
+    for etCollection in etCollections:
+        try:
+            etLocalRepository.find('collection[@id="' + etCollection.attrib.get('id') + '"]').attrib.get('id')
+        except:
+            print ET.tostring(etCollection)
+            
+# Request all bundles.
+if '--bundles' in sys.argv[1:]:
+    init()
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, apiUrl + '/bundle')
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    etBundles = ET.XML(response.getvalue())
+    for etBundle in etBundles:
+        try:
+            etLocalRepository.find('collection/bundle/bundle[@id="' + etBundle.attrib.get('id') + '"]/title').text
+        except:
+            if '--parent' in sys.argv[1:]:
+                c.setopt(pycurl.POST, 0)
+                c.setopt(pycurl.URL, apiUrl + '/collection/' + etBundle.find('collection/collection').attrib.get('id'))
+                response = cStringIO.StringIO()
+                c.setopt(pycurl.WRITEFUNCTION, response.write)
+                c.perform()
+                etCollection = ET.XML(response.getvalue())            
+                etBundle.find('collection/collection').attrib['title'] = etCollection.find('title').text
+                etBundle.find('collection/collection').attrib['description'] = etCollection.find('description').text            
+            print ET.tostring(etBundle)
+            
+# Request all content.
+if '--content' in sys.argv[1:]:
+    init()
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, apiUrl + '/baseContent')
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    etBaseContents = ET.XML(response.getvalue())
+    for etBaseContent in etBaseContents:
+        try:
+            etLocalRepository.find('collection/bundle/bundle/content/baseContent[@id="' + etBaseContent.attrib.get('id') + '"]/title').text
+        except:
+            if '--parent' in sys.argv[1:]:
+                c.setopt(pycurl.POST, 0)
+                c.setopt(pycurl.URL, apiUrl + '/bundle/' + etBaseContent.find('bundle/bundle').attrib.get('id'))
+                response = cStringIO.StringIO()
+                c.setopt(pycurl.WRITEFUNCTION, response.write)
+                c.perform()
+                etBundle = ET.XML(response.getvalue())            
+                etBaseContent.find('bundle/bundle').attrib['title'] = etBundle.find('title').text
+                etBaseContent.find('bundle/bundle').attrib['description'] = etBundle.find('description').text
+            print ET.tostring(etBaseContent)
+
+
+
+
+
+
+
+

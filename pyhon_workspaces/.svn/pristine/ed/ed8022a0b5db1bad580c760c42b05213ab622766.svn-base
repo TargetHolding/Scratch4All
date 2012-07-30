@@ -1,0 +1,86 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+exportPath = 'd:/export'
+
+# Authentication.
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, loginUrl)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+# Make export directory.
+if not os.path.exists(exportPath):
+    os.makedirs(exportPath)
+
+# REST request all collections.
+c.setopt(pycurl.POST, 0)
+c.setopt(pycurl.URL, apiUrl + '/collection')
+response = cStringIO.StringIO()
+c.setopt(pycurl.WRITEFUNCTION, response.write)
+c.perform()
+etCollections = ET.XML(response.getvalue())
+
+etXmlFull = etCollections
+# Loop collections to get children bundles.
+for etCollection in etCollections.findall('collection'):
+    collectionId = etCollection.attrib.get('id')
+    collectionTitle = etCollection.find('title').text
+    print 'Collection title: ' + collectionTitle + ', id: ' + collectionId + '.'
+    for etBundleId in etCollection.findall('bundle/bundle'):
+        bundleId = etBundleId.attrib.get('id')
+        # Get child bundle.
+        c.setopt(pycurl.POST, 0)
+        c.setopt(pycurl.URL, apiUrl + '/bundle/' + bundleId)
+        response = cStringIO.StringIO()
+        c.setopt(pycurl.WRITEFUNCTION, response.write)
+        c.perform()
+        etBundle = ET.XML(response.getvalue())
+        bundleTitle = etBundle.find('title').text
+        # Copy child bundle to 'etXmlFull'.
+        etXmlFull.find('collection/bundle/bundle[@id="' + bundleId + '"]').extend(etBundle)
+        print '\tBundle title: ' + bundleTitle + ', id: ' + bundleId + '.'
+        # Loop bundle to get children baseContents
+        for etBaseContentId in ET.XML(ET.tostring(etBundle)).findall('content/baseContent'):
+            baseContentId = etBaseContentId.attrib.get('id')
+            # Get child baseContent.
+            c.setopt(pycurl.POST, 0)
+            c.setopt(pycurl.URL, apiUrl + '/baseContent/' + baseContentId)
+            response = cStringIO.StringIO()
+            c.setopt(pycurl.WRITEFUNCTION, response.write)
+            c.perform()
+            etBaseContent = ET.XML(response.getvalue())
+            baseContentTitle = etBaseContent.find('title').text
+            # Copy child baseContent to 'etXmlFull'.
+            etXmlFull.find('collection/bundle/bundle/content/baseContent[@id="' + baseContentId + '"]').extend(etBaseContent)
+            print '\t\tBaseContent: ' + baseContentTitle + ', id: ' + baseContentId + '.'
+            # Try download attachment.
+            url = etBaseContent.find('url').text
+            try:       
+                c.setopt(pycurl.POST, 0)
+                c.setopt(pycurl.URL, etBaseContent.find('url').text)            
+                response = cStringIO.StringIO()
+                headers = cStringIO.StringIO()
+                retrievedHeaders = cStringIO.StringIO()
+                c.setopt(pycurl.WRITEFUNCTION, response.write)
+                c.setopt(pycurl.HEADERFUNCTION, headers.write)
+                c.perform()
+                filename = ''
+                for headerLine in headers.getvalue().splitlines():
+                    if 'Content-disposition: filename=' in headerLine:
+                        filename = headerLine.replace('Content-disposition: filename=', '')   
+                open(exportPath + '/' + collectionId + '/' + bundleId + '/' + filename, 'wb').write(response.getvalue())
+            except: 
+                pass
+print 'Write \'export.xml\''
+open(exportPath + '/' + 'export.xml', 'wb').write(xml.dom.minidom.parseString(ET.tostring(etXmlFull)).toprettyxml())
+print 'Done.'

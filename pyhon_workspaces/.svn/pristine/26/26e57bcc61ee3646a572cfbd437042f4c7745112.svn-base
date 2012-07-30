@@ -1,0 +1,67 @@
+import os
+import os.path
+import xml.etree.ElementTree as ET
+import urllib2
+import cookielib
+
+path = 'D:/BOOK/'
+xmlFile = 'import.xml'
+scanExtentsion = '.jpg'
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+
+etImport = ET.parse(path + xmlFile)
+
+# Authentication
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+opener.open(login_url, 'username=' + username + '&password=' + password).read()
+
+# Get bundle id based on bundle title
+etBundles = ET.XML(opener.open(api_url + 'bundle').read())
+for etBundle in etBundles.findall('bundle/title'):
+    if etBundle.text == etImport.find('bundle').attrib.get('title'):
+        bundleId = etBundles.find('bundle').attrib.get('id')
+
+# Make list with filenames with meta data in xmlFile
+fileNamesWithMetaData = []
+for etBaseContent in etImport.findall('baseContents/baseContent'):
+    fileNamesWithMetaData.append(etBaseContent.attrib.get('filename'))
+    
+# Iterate items (book scans)
+for fileName in os.listdir(path):
+    if os.path.isfile(path + fileName) and os.path.splitext(fileName)[1] == scanExtentsion:
+        
+        # Get meta data for this item
+        metaData = {'description':fileName, 'published':'false', 'title':fileName}
+        for etBaseContent in etImport.findall('baseContents/baseContent'):
+            if etBaseContent.attrib.get('filename') == fileName:
+                metaData = {'description':etBaseContent.attrib.get('description'), 'published':etBaseContent.attrib.get('published'), 'title':etBaseContent.attrib.get('title')}
+                
+        # Make XML for this item
+        xml = ('<baseContent>'
+                 '<bundle><bundle id="' + bundleId + '"/></bundle>'
+                 '<description>' + metaData['description'] + '</description>'
+                 '<published>' + metaData['published'] + '</published>'
+                 '<title>' + metaData['title'] + '</title>'
+               '</baseContent>')
+        
+        # POST XML to CatchPlus REST API (create)
+        print xml
+        #print 'POST to URL: ' + api_url + 'baseContent'
+        #req = urllib2.Request(api_url + 'baseContent', xml)
+        #req.add_header('Content-type', 'application/xml')
+        #opener.open(req)
+
+        
+        # POST attachment  to CatchPlus REST API (create / upload)
+        print fileName
+        
+        
+
+
+
+
+

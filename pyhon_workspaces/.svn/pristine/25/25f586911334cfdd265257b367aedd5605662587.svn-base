@@ -1,0 +1,97 @@
+import os.path
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+# Format contents xmlFile:
+# Give collection, bundle hierarchy
+# Collections must exist in Workspaces
+# Bundles must exist in import directory
+# Format:
+# '<xml>'
+#   '<collection title="..." description="...">'
+#     '<bundle bookdir="..." title="..." description="..."/>'
+#   '</collection>'
+# '</xml>'
+
+importDir = 'D:/BOOKS'
+xmlFile = 'importHierarchy.xml'
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+
+
+
+etHierarchy = ET.parse(importDir + '/' + xmlFile)
+
+# Authentication
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, login_url)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+# Make collections based on 'xmlHierarchy'
+for etHierarchyCollection in etHierarchy.findall('collection'):
+    xml = ('<collection>'
+             '<title>' + etHierarchyCollection.attrib.get('title') + '</title>'
+             '<description>' + etHierarchyCollection.attrib.get('description') + '</description>'
+           '</collection>')
+    c.setopt(pycurl.POST, 1)
+    c.setopt(pycurl.URL, api_url + '/collection')
+    c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/xml'])
+    c.setopt(pycurl.POSTFIELDS, xml)
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    print response.getvalue()
+    collectionId = ET.XML(response.getvalue()).attrib.get('id')
+    # Make bundles based on 'xmlHierarchy'
+    for etHierarchyCollectionBundle in etHierarchyCollection.findall('bundle'):
+        xml = ('<bundle>'
+                 '<ownerCollection id="' + collectionId + '"/>'
+                 '<title>' + etHierarchyCollectionBundle.attrib.get('title') + '</title>'
+                 '<description>' + etHierarchyCollectionBundle.attrib.get('description') + '</description>'
+               '</bundle>')
+        c.setopt(pycurl.POST, 1)
+        c.setopt(pycurl.URL, api_url + '/bundle')
+        c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/xml'])
+        c.setopt(pycurl.POSTFIELDS, xml)
+        response = cStringIO.StringIO()
+        c.setopt(pycurl.WRITEFUNCTION, response.write)
+        c.perform()
+        print response.getvalue()
+        bundleId = ET.XML(response.getvalue()).attrib.get('id')
+        # Make baseContent based on 'importDirectory'
+        baseDir = importDir + '/' + etHierarchyCollectionBundle.attrib.get('bookdir')
+        jpegDir = baseDir + '/' + 'Jpeg'
+        txtDir = baseDir + '/' + 'Txt'
+        # Attach files based on 'importDirectory'
+        if os.path.isdir(baseDir):
+            for item in os.listdir(jpegDir):
+                jpgFile = jpegDir + '/' + item
+                if os.path.isfile(jpgFile) and os.path.splitext(item)[1] == '.jpg':
+                    description = '...'
+                    txtFile = txtDir + '/' + os.path.splitext(item)[0] + '.txt'
+                    if os.path.isfile(txtFile):
+                        description = open(txtFile, 'r').readline().split('\n', 1)[0]                    
+                    xml = ('<baseContent>'
+                             '<ownerBundle id="' + bundleId + '"/>'
+                             '<title>' + os.path.splitext(item)[0] + '</title>'
+                             '<description>' + description + '</description>'
+                           '</baseContent>')                                                
+                    c.setopt(pycurl.POST, 1)
+                    c.setopt(pycurl.URL, api_url + "/baseContent")
+                    c.setopt(pycurl.HTTPHEADER, ['Content-Type: multipart/form-data'])
+                    c.setopt(pycurl.HTTPPOST, [('xml', xml), ("file", (pycurl.FORM_FILE, jpgFile))])
+                    response = cStringIO.StringIO()
+                    c.setopt(pycurl.WRITEFUNCTION, response.write)
+                    c.perform()
+                    print response.getvalue()
+        else:
+            print 'Not found: "' + jpegDir + '"'
+
+c.close()

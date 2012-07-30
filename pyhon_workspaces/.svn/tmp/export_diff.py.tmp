@@ -1,0 +1,75 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+
+etOld = ET.parse('d:/old.xml')
+etNew = ET.parse('d:/new.xml')
+
+# Note parents must be published as well
+requirePublished = False
+
+
+newCollectionIds = []
+newBundleIds = []
+newBaseContentIds = []
+
+
+for etNewCollection in etNew.findall('collection'):
+    if requirePublished == False or etNewCollection.find('published').text == 'true':
+        foundCollection = False
+        for etOldCollection in etOld.findall('collection'):
+            if etNewCollection.attrib.get('id') == etOldCollection.attrib.get('id'):
+<<<<<<< .working
+                pass
+=======
+                foundCollection = True
+>>>>>>> .merge-right.r61
+                for etNewBundle in etNewCollection.findall('bundle/bundle'):
+                    if requirePublished == False or etNewBundle.find('published').text == 'true':
+                        foundBundle = False
+                        for etOldBundle in etOldCollection.findall('bundle/bundle'):
+                            if etNewBundle.attrib.get('id') == etOldBundle.attrib.get('id'):
+                                foundBundle = True
+                                for etNewBaseContent in etNewBundle.findall('content/baseContent'):
+                                    if requirePublished == False or etNewBaseContent.find('published').text == 'true':
+                                        foundBaseContent = False
+                                        for etOldBaseContent in etOldBundle.findall('content/baseContent'):
+                                            if etNewBaseContent.attrib.get('id') == etOldBaseContent.attrib.get('id'):
+                                                foundBaseContent = True
+                                        if foundBaseContent == False:
+                                            newBaseContentIds.append(etNewBaseContent.attrib.get('id'))                       
+                        if foundBundle == False:
+                            newBundleIds.append(etNewBundle.attrib.get('id'))                   
+        if foundCollection == False:
+            newCollectionIds.append(etNewCollection.attrib.get('id'))
+
+for newCollectionId in newCollectionIds:
+    o = 'Collection ID: ' + newCollectionId + '; '
+    try:       
+        o +=  'Name: ' + etNew.find('collection/bundle/bundle[@id="' + newCollectionId + '"]/title').text + '; '
+        o +=  'Description: ' + etNew.find('collection/bundle/bundle[@id="' + newCollectionId + '"]/description').text + '; '
+    except: 
+        pass
+    print o
+
+for newBundleId in newBundleIds:
+    o = 'Bundle ID: ' + newBundleId + '; '
+    try:       
+        o +=  'Name: ' + etNew.find('collection/bundle/bundle[@id="' + newBundleId + '"]/title').text + '; '
+        o +=  'Description: ' + etNew.find('collection/bundle/bundle[@id="' + newBundleId + '"]/description').text + '; '
+    except: 
+        pass
+    print '\t' + o
+
+for newBaseContentId in newBaseContentIds:
+    o = 'BaseContent ID: ' + newBaseContentId + '; '
+    try:       
+        o +=  'Name: ' + etNew.find('collection/bundle/bundle[@id="' + newBaseContentId + '"]/title').text + '; '
+        o +=  'Description: ' + etNew.find('collection/bundle/bundle[@id="' + newBaseContentId + '"]/description').text + '; '
+    except: 
+        pass
+    print '\t\t' + o     

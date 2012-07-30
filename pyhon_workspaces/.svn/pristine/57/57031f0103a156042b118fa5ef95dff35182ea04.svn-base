@@ -1,0 +1,56 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:/DIFF'
+xmlOld = 'old.xml'
+xmlNew = 'new.xml'
+
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etNew = ET.XML(open(exportDir + '/' + xmlNew, 'rb').read())
+
+
+oldCollectionIds = []
+oldBundleIds = []
+oldBaseContentIds = []
+for etOldCollection in etOld.findall('collection'):
+    oldCollectionIds.append(etOldCollection.attrib.get('id'))
+for etOldBundle in etOld.findall('collection/bundle/bundle'):
+    oldBundleIds.append(etOldBundle.attrib.get('id'))
+for etOldBaseContent in etOld.findall('collection/bundle/bundle/content/baseContent'):
+    oldBaseContentIds.append(etOldBaseContent.attrib.get('id'))
+for etNewCollection in etNew.findall('collection'):
+    if (etNewCollection.attrib.get('id') in oldCollectionIds):
+        etNewCollection.attrib['new'] = 'false'
+    else:
+        etNewCollection.attrib['new'] = 'true'
+for etNewBundle in etNew.findall('collection/bundle/bundle'):
+    if (etNewBundle.attrib.get('id') in oldBundleIds):
+        etNewBundle.attrib['new'] = 'false'
+    else:
+        etNewBundle.attrib['new'] = 'true'
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    if (etNewBaseContent.attrib.get('id') in oldBaseContentIds):
+        etNewBaseContent.attrib['new'] = 'false'
+    else:
+        etNewBaseContent.attrib['new'] = 'true'
+
+
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    if (etNewBaseContent.attrib.get('id') not in oldBaseContentIds):
+        baseContentId = etNewBaseContent.attrib.get('id')
+        bundleId = etNewBaseContent.find('bundle/bundle').attrib.get('id')
+        for etNewBundle in etNew.findall('collection/bundle/bundle'):
+            if (etNewBundle.attrib.get('id') in bundleId):
+                collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+                print 'baseContent path: ' + collectionId + '/' + bundleId + '/' + baseContentId + ' xml: ' + ET.tostring(etNewBaseContent)
+
+
+
+

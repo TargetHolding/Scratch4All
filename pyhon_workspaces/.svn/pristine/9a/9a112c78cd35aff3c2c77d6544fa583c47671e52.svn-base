@@ -1,0 +1,19 @@
+import urllib2
+import cookielib
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+opener.open(login_url, 'username=' + username + '&password=' + password).read()
+
+# POST XML
+request = urllib2.Request(api_url + 'bundle')
+request.add_header('Content-Type', 'application/xml')
+request.add_data('<bundle><ownerCollection id="682"/><title>REST</title><description>REST</description></bundle>')
+request.get_method = lambda: 'POST'
+response = opener.open(request)
+print response.read()
+

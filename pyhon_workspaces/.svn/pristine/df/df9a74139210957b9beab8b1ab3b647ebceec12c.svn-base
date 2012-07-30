@@ -1,0 +1,30 @@
+import os.path
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+response = cStringIO.StringIO()
+
+# Authentication
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.CUSTOMREQUEST, 'POST')
+c.setopt(pycurl.URL, login_url)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+# PUT request
+#c.setopt(pycurl.CUSTOMREQUEST, 'PUT')
+c.setopt(pycurl.CUSTOMREQUEST, 'PUT')
+c.setopt(pycurl.URL, api_url + '/bundle/10222')
+c.setopt(pycurl.HTTPHEADER, ['Content-Type: application/xml'])
+c.setopt(pycurl.POSTFIELDS, '<bundle><title>ynavis-NL-HaNA_2.02.04_3960</title><description>y3960</description></bundle>')
+response = cStringIO.StringIO()
+c.setopt(pycurl.WRITEFUNCTION, response.write)
+c.perform()
+print response.getvalue()
+c.close()

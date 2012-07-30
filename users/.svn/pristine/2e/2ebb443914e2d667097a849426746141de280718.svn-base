@@ -1,0 +1,25 @@
+
+body, table
+{
+  font: 12px arial, helvetica, sans-serif;
+}
+form
+{
+  margin: 0px;
+}
+.tbl
+{
+  border-width: 1px;
+  background-color: white;
+  border-collapse: collapse;
+  border-style: solid;
+  border-color: black;
+}
+.link_button_red
+{
+  color:             red;
+  background-color:  white;
+  border-width:      0;
+  cursor:            pointer;
+  padding:           0;
+}

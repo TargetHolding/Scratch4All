@@ -1,0 +1,88 @@
+import os
+import sys
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api'
+username = 'instituut01@admin.nl'
+password = 'qwerty'
+baseDir = 'd:/workspace'
+localRepository = 'local.xml'
+
+# Make export directory.
+if not os.path.exists(baseDir):
+    os.makedirs(baseDir)
+# Open local repository.
+etLocalRepository = ET.XML('<list></list>')
+if os.path.isfile(baseDir + '/' + localRepository):
+    etLocalRepository = ET.XML(open(baseDir + '/' + localRepository, 'rb').read())
+# Authentication.
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, loginUrl)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+if 'help' in sys.argv[1:] or '--help' in sys.argv[1:]:
+    print (
+           'ls [inclucde_non_published_bundles] [inclucde_non_published_content] \n\n'
+           '  Output bundle(s) with new item(s).\n\n'
+           '<bundle_id> [download] [inclucde_non_published_bundles] [inclucde_non_published_content]\n\n'
+           '  Output and optionally download all new baseContents from parent bundle ID\n\n'
+           '<bundle_title> [download] [inclucde_non_published_bundles] [inclucde_non_published_content]\n\n'
+           '  Output and optionally download all new baseContents from parent bundle title\n\n'           
+          )
+    sys.exit(0)
+
+def postRest(url):
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, url)
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    return ET.XML(response.getvalue())
+
+# Output bundle(s) with new item(s)
+if 'ls' in sys.argv[1:]:
+    etBundles = postRest(apiUrl + '/bundle')
+    for etBundle in etBundles:
+        # Published switch
+        if etBundle.find('published').text == 'true' or 'inclucde_non_published_bundles' in sys.argv[1:]:
+            for etBaseContentId in etBundle.findall('content/baseContent'):
+                baseContentId = etBaseContentId.attrib.get('id')
+                # Check if baseContent is new
+                if len(etLocalRepository.findall('collection/bundle/bundle/content/baseContent[@id="' + baseContentId + '"]/title')) == 0:
+                    # Request baseContent
+                    etBaseContent = postRest(apiUrl + '/baseContent/' + baseContentId)
+                    # Published switch
+                    if etBaseContent.find('published').text == 'true' or 'inclucde_non_published_content' in sys.argv[1:]:
+                        print ET.tostring(etBundle)
+                        break
+    sys.exit(0)
+
+etBundles = postRest(apiUrl + '/bundle')
+
+for argv in sys.argv[1:]:
+    for etBundle in etBundles:
+        if argv in (etBundle.attrib.get('id'), etBundle.find('title').text):
+            
+            if 'download' not in sys.argv[1:]:
+                print ET.tostring(etBundle)
+                for etBaseContentId in etBundle.findall('content/baseContent'):
+                    baseContentId = etBaseContentId.attrib.get('id')
+                    # Check if baseContent is new
+                    if len(etLocalRepository.findall('collection/bundle/bundle/content/baseContent[@id="' + baseContentId + '"]/title')) == 0:
+                        # Request baseContent
+                        etBaseContent = postRest(apiUrl + '/baseContent/' + baseContentId)
+                        # Published switch
+                        if etBaseContent.find('published').text == 'true' or 'inclucde_non_published_content' in sys.argv[1:]:
+                            print '\t' + ET.tostring(etBaseContent)
+            
+            if 'download' in sys.argv[1:]:
+                parentCollectionId = etBundle.find('collection/collection').attrib.get('id')
+            
+
+                    

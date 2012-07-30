@@ -1,0 +1,40 @@
+import os
+import urllib2
+import cookielib
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api/'
+username = 'instituut01@admin.nl'
+password = 'qwerty'
+exportPath = 'd:/export/'
+
+if not os.path.exists(exportPath):
+    os.makedirs(exportPath)
+
+print 'Login...'
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+opener.open(loginUrl, 'username=' + username + '&password=' + password).read()
+etFullXml = ET.XML('<list></list>')
+print 'Get all collections...'
+etCollections = ET.XML(opener.open(apiUrl + 'collection').read())
+etCollectionsRecursive = etCollections
+for etCollection in etCollections.findall('collection'):
+    for etCollectionBundleBundle in etCollection.findall('bundle/bundle'):
+        print 'Get bundle id:"' + etCollectionBundleBundle.attrib.get('id') + '"...'
+        etBundle = ET.XML(opener.open(apiUrl + 'bundle/' + etCollectionBundleBundle.attrib.get('id')).read())
+        etCollectionsRecursive.find('collection/bundle/bundle[@id="' + etCollectionBundleBundle.attrib.get('id') + '"]').extend(etBundle)
+        for etBundleContentBaseContent in ET.XML(ET.tostring(etBundle)).findall('content/baseContent'):
+            print 'Get base content id:"' + etBundleContentBaseContent.attrib.get('id') + '", and download attachment when available...'
+            etBaseContent = ET.XML(opener.open(apiUrl + 'baseContent/' + etBundleContentBaseContent.attrib.get('id')).read())
+            etCollectionsRecursive.find('collection/bundle/bundle/content/baseContent[@id="' + etBundleContentBaseContent.attrib.get('id') + '"]').extend(etBaseContent)
+            try:
+                fileBinary = opener.open(etBaseContent.find('url').text)
+                fileName = fileBinary.info()['Content-Disposition'].replace('filename=','')
+                open(exportPath + fileName, 'wb').write(fileBinary.read())
+            except: 
+                pass
+print 'Write export.xml, containing collections with underlying elements: bundle and base content...'
+open(exportPath + 'export.xml', 'wb').write(xml.dom.minidom.parseString(ET.tostring(etCollectionsRecursive)).toprettyxml())
+print 'Done.'

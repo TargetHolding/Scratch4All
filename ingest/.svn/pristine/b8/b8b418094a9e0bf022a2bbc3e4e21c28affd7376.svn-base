@@ -1,0 +1,21 @@
+body { font: 12px arial, helvetica, sans-serif; }
+noscript > p { width: 100%; height: 2em; line-height: 2em; background: #ce0000; color: #fff; font-weight: bold; text-align: center; }
+
+.radius { -webkit-border-radius: 10px; -moz-border-radius: 10px; border-radius: 10px; }
+.radius-small { -webkit-border-radius: 4px; -moz-border-radius: 4px; border-radius: 4px; }
+.shadow { -webkit-box-shadow: 2px 2px 8px #b5b5b5; -moz-box-shadow: 2px 2px 8px #b5b5b5; box-shadow: 2px 2px 8px #b5b5b5; }
+.highlight { border: 1px solid #ff6200 !important; }
+
+#footer { text-align: center; margin-top: 50px; }
+#footer > img { margin: 0 5px; }
+
+#ingest .header { width: 200px; height: 83px; margin: 50px auto 10px; background: url('images/monk-small.png') no-repeat left top; }
+#ingest .container { width: 1000px; margin: 50px auto 0; }
+#ingest .image-holder { background: #e2e2e2; border: 1px solid #bdbdbd; margin: 10px; padding: 10px; }
+#ingest .image-holder .shadow { border: 1px solid #b6ac9d; }
+#ingest .image-holder img { display: block; width: 100%; } /* fixes overlap and bottom margin quirks */
+
+#ingest .text-holder { background: #efefef; color: #322c23; border: 1px solid #d7d7d7; font-size: 14px; height: 2em; line-height: 2em; margin-top: 10px; }
+#ingest .text-holder  { padding: 0 10px; }
+#ingest .text-holder label { margin: 0 8px; font-weight: bold; }
+#ingest .text-holder input[type=text] { font-size: 14px; height: 1.4em; line-height: 1.4em; color: #437c37; width: 50px; margin-right: 10px; }

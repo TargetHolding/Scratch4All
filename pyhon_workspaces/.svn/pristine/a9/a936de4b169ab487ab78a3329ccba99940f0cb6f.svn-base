@@ -1,0 +1,20 @@
+import urllib2
+import cookielib
+
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.open(login_url, 'username=' + username + '&password=' + password).read()
+
+
+
+request = urllib2.Request('http://217.21.192.152:8080/catchplus/api/baseContent/597')
+cj.add_cookie_header(request)
+response = urllib2.urlopen(request)
+print response.read()
+

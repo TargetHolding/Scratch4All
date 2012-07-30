@@ -1,0 +1,16 @@
+import xml.etree.ElementTree as ET
+
+
+xml1 = '<xml1><element1>bla1</element1></xml1>'
+xml2 = '<xml2><element2>bla2</element2></xml2>'
+
+etXml1 = ET.XML(xml1)
+etXml2 = ET.XML(xml2)
+
+
+
+etXml1.find('element1').text=''
+etXml1.find('element1').extend(etXml2)
+
+
+print ET.tostring(etXml1)

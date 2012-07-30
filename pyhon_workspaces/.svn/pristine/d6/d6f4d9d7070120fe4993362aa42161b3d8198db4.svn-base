@@ -1,0 +1,147 @@
+import os
+import sys
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api'
+username = 'instituut01@admin.nl'
+password = 'qwerty'
+baseDir = 'd:/workspace'
+localRepository = 'local.xml'
+
+# Make export directory.
+if not os.path.exists(baseDir):
+    os.makedirs(baseDir)
+# Open local repository.
+etLocalRepository = ET.XML('<list></list>')
+if os.path.isfile(baseDir + '/' + localRepository):
+    etLocalRepository = ET.XML(open(baseDir + '/' + localRepository, 'rb').read())
+# Authentication.
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, loginUrl)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+if 'help' in sys.argv[1:] or len(sys.argv[1:]) == 0:
+    print (
+           'ls [items] [parent] [ignore_published] [ignore_local]\n\n'
+           '    Show collections, bundles and or baseContents.\n\n'
+           '  parent\n'
+           '    Extend parent ID with title and description.\n\n'
+           '  ignore_published\n'
+           '    Include not published items.\n\n'
+           '  ignore_local\n'
+           '    Ignore local repository.\n\n'
+          )
+    sys.exit(0)
+
+
+
+def ls(item):
+    if 'ls' in sys.argv[1:] and (('collections' not in sys.argv[1:] and  'bundles' not in sys.argv[1:] and 'contents' not in sys.argv[1:]) or (item in sys.argv[1:])):
+        return True
+    return False
+
+def postRest(url):
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, url)
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    return ET.XML(response.getvalue())
+
+def downloadFile(url, dest):
+    try:       
+        c.setopt(pycurl.POST, 0)
+        c.setopt(pycurl.URL, url)            
+        response = cStringIO.StringIO()
+        headers = cStringIO.StringIO()
+        c.setopt(pycurl.WRITEFUNCTION, response.write)
+        c.setopt(pycurl.HEADERFUNCTION, headers.write)
+        c.perform()
+        filename = ''
+        for headerLine in headers.getvalue().splitlines():
+            if 'Content-disposition: filename=' in headerLine:
+                filename = headerLine.replace('Content-disposition: filename=', '')
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        open(dest + '/' + filename, 'wb').write(response.getvalue())
+    except: 
+        print 'Download failed for url: ' + url
+
+# Request all collections.
+if ls('collections'):
+    etCollections = postRest(apiUrl + '/collection')
+    for etCollection in etCollections:
+        if etCollection.find('published').text == 'true' or 'ignore_published' in sys.argv[1:]:
+            try:
+                if 'ignore_local' in sys.argv[1:]:
+                    raise
+                etLocalRepository.find('collection[@id="' + etCollection.attrib.get('id') + '"]').attrib.get('id')
+            except:
+                print ET.tostring(etCollection)
+            
+# Request all bundles.
+if ls('bundles'):
+    etBundles = postRest(apiUrl + '/bundle')
+    for etBundle in etBundles:
+        if etBundle.find('published').text == 'true' or 'ignore_published' in sys.argv[1:]:        
+            try:
+                if 'ignore_local' in sys.argv[1:]:
+                    raise
+                etLocalRepository.find('collection/bundle/bundle[@id="' + etBundle.attrib.get('id') + '"]/title').text
+            except:
+                if 'parent' in sys.argv[1:]:
+                    etCollection = postRest(apiUrl + '/collection/' + etBundle.find('collection/collection').attrib.get('id'))
+                    etBundle.find('collection/collection').attrib['title'] = etCollection.find('title').text
+                    etBundle.find('collection/collection').attrib['description'] = etCollection.find('description').text            
+                print ET.tostring(etBundle)
+            
+# Request all content.
+if ls('contents'):
+    etBaseContents = postRest(apiUrl + '/baseContent')
+    for etBaseContent in etBaseContents:
+        if etBaseContent.find('published').text == 'true' or 'ignore_published' in sys.argv[1:]:        
+            try:
+                if 'ignore_local' in sys.argv[1:]:
+                    raise
+                etLocalRepository.find('collection/bundle/bundle/content/baseContent[@id="' + etBaseContent.attrib.get('id') + '"]/title').text
+            except:
+                if 'parent' in sys.argv[1:]:
+                    etBundle = postRest(apiUrl + '/bundle/' + etBaseContent.find('bundle/bundle').attrib.get('id'))            
+                    etBaseContent.find('bundle/bundle').attrib['title'] = etBundle.find('title').text
+                    etBaseContent.find('bundle/bundle').attrib['description'] = etBundle.find('description').text
+                print ET.tostring(etBaseContent)
+
+#if 'sync' in sys.argv[1:]:
+#    for arg in sys.argv[1:]:
+#        if arg.isdigit():
+#            try:
+#                etReply = postRest(apiUrl + '/bundle/' + arg)
+#                if etReply.tag == 'error':
+#                    raise
+#                elif etReply.tag == 'collection':
+#                    print 'collection'
+#                elif etReply.tag == 'bundle':
+#                    print 'bundle'
+#                elif etReply.tag == 'baseContent':
+#                    print 'baseContent'
+#                    baseDir
+#                    downloadFile(url, dest)
+#                else:
+#                    raise
+#            except:
+#                print arg + ' Not found.'
+
+
+
+
+
+
+
+
+

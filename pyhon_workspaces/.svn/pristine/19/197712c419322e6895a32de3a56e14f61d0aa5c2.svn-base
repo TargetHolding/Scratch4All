@@ -1,0 +1,26 @@
+import urllib2
+import cookielib
+import xml.etree.ElementTree as ET
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+data = 'username=' + username + '&password=' + password
+
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+opener.open(login_url, data).read()
+
+
+#print ET.tostring(element)
+
+for collection in ET.XML(opener.open(api_url + 'collection').read()).findall('collection'):
+    for bundleId in collection.findall('bundle/bundle'):
+        print bundleId.tag + 'ID=' + bundleId.attrib.get('id')
+        #for collection in ET.XML(opener.open(api_url + 'bundle/'+collectionId.attrib.get('id')).read()).findall('bundle'):
+            #for baseContentId in collection.findall('content/baseContent'):
+                #print baseContentId.tag + 'ID=' + baseContentId.attrib.get('id')
+
+
+
+

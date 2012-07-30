@@ -1,0 +1,43 @@
+import pycurl
+#import sys
+import cStringIO
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+response = cStringIO.StringIO()
+
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, login_url)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+#c.setopt(c.POST, 0)
+#c.setopt(c.URL, api_url + "collection")
+#c.perform()
+
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, api_url + "baseContent")
+c.setopt(pycurl.HTTPPOST, [('xml', '<baseContent><ownerBundle id="1645"/><title>REST2</title><description>REST2</description></baseContent>') ])
+c.setopt(pycurl.WRITEFUNCTION, response.write)
+c.perform()
+c.close()
+
+print '---'
+print response.getvalue()
+print '---'
+#import pycurl
+#import cStringIO
+#
+#response = cStringIO.StringIO()
+#
+#c = pycurl.Curl()
+#c.setopt(c.URL, 'http://www.turnkeylinux.org')
+#c.setopt(c.WRITEFUNCTION, response.write)
+#c.perform()
+#c.close()
+#
+#print response.getvalue()

@@ -1,0 +1,53 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:'
+xmlOld = 'old.xml'
+xmlNew = 'new.xml'
+
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etNew = ET.XML(open(exportDir + '/' + xmlNew, 'rb').read())
+
+
+oldCollectionIds = []
+oldBundleIds = []
+oldBaseContentIds = []
+diffCollectionIds = []
+diffBundleIds = []
+diffBaseContentIds = []
+for etOldCollection in etOld.findall('collection'):
+    oldCollectionIds.append(etOldCollection.attrib.get('id'))
+for etOldBundle in etOld.findall('collection/bundle/bundle'):
+    oldBundleIds.append(etOldBundle.attrib.get('id'))
+for etOldBaseContent in etOld.findall('collection/bundle/bundle/content/baseContent'):
+    oldBaseContentIds.append(etOldBaseContent.attrib.get('id'))
+for etNewCollection in etNew.findall('collection'):
+    if (etNewCollection.attrib.get('id') not in oldCollectionIds):
+        diffCollectionIds.append(etNewCollection.attrib.get('id'))
+for etNewBundle in etNew.findall('collection/bundle/bundle'):
+    if (etNewBundle.attrib.get('id') not in oldBundleIds):
+        diffBundleIds.append(etNewBundle.attrib.get('id'))
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    if (etNewBaseContent.attrib.get('id') not in oldBaseContentIds):
+        diffBaseContentIds.append(etNewBaseContent.attrib.get('id'))
+        etNewCollection.attrib['xxx'] = 'xyz123'
+        etNewCollection.attrib['xxx'] = 'xyz321'
+    
+print diffCollectionIds
+print diffBundleIds
+print diffBaseContentIds
+
+print ET.tostring(etNew)
+
+
+
+
+
+

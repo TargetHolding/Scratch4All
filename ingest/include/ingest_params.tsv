@@ -1,0 +1,27 @@
+nfilt	59	boxcar smoothing of histograms (only odd values)
+scenderadd	45	white vertical padding pixels of line strips
+left_softleft	220	soft left margin to ignore book cover
+left_softright	220	soft right margin to ignore book cover
+left_softtop	150	soft top margin to ignore book cover
+left_softbottom	150	soft bottom margin to ignore book cover
+right_softleft	220	soft left margin to ignore book cover
+right_softright	220	soft right margin to ignore book cover
+right_softtop	150	soft top margin to ignore book cover
+right_softbottom	150	soft bottom margin to ignore book cover
+histblackprop	0.03	proportion of ink pixels expected
+white	204	level [0-255] above which we assume WHITE
+gamma	0.4	gamma value to compensate for scanner non-linearity
+nboxes	120	Nletters expected on a line for BG-removal local filter
+scriptype	"handwriting"
+peak_crit	0.2	Proportion of maxdens to be reckoned as a solid line
+despeckle	9	Despeckle width for table line removal
+inkdilate	2	Number of ink dilations
+remove_table_speckles	1	Flag for despeckling table-line residuals
+inkdilate_extra	1	Number of extra ink dilations for line image, last oper.
+shearangle	90	Unshear angle (KdK: 45, 90 = null operator)
+margindecoco	0	Remove marginal cocos
+simplelinecutout	1
+greyconvmode	unsat	Method of converting color page to grey (possible values: mean|min|max|unsat|red)
+max_table_verline	13
+runlmin_table_verline	7
+RANDOM_SAMPLE

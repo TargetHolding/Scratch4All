@@ -1,0 +1,48 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+
+etOld = ET.parse('d:/old.xml')
+etNew = ET.parse('d:/new.xml')
+requirePublished = False
+
+
+newCollections = []
+newBundles = []
+newBaseContents = []
+
+
+for etNewCollection in etNew.findall('collection'):
+    if requirePublished == False or etNewCollection.find('published').text == 'true':
+        foundCollection = False
+        for etOldCollection in etOld.findall('collection'):
+            if etNewCollection.attrib.get('id') == etOldCollection.attrib.get('id'):
+                foundCollection = True
+                for etNewBundle in etNewCollection.findall('bundle/bundle'):
+                    if requirePublished == False or etNewBundle.find('published').text == 'true':
+                        foundBundle = False
+                        for etOldBundle in etOldCollection.findall('bundle/bundle'):
+                            if etNewBundle.attrib.get('id') == etOldBundle.attrib.get('id'):
+                                foundBundle = True
+                                for etNewBaseContent in etNewBundle.findall('content/baseContent'):
+                                    if requirePublished == False or etNewBaseContent.find('published').text == 'true':
+                                        foundBaseContent = False
+                                        for etOldBaseContent in etOldBundle.findall('content/baseContent'):
+                                            if etNewBaseContent.attrib.get('id') == etOldBaseContent.attrib.get('id'):
+                                                foundBaseContent = True
+                                        if foundBaseContent == False:
+                                            newBaseContents.append(etNewBaseContent.attrib.get('id'))                       
+                        if foundBundle == False:
+                            newBundles.append(etNewBundle.attrib.get('id'))                   
+        if foundCollection == False:
+            newCollections.append(etNewCollection.attrib.get('id'))
+
+print newCollections
+print newBundles
+print newBaseContents
+        
+        

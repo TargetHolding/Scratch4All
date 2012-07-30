@@ -1,0 +1,70 @@
+import os
+import sys
+import xml.etree.ElementTree as ET
+import pycurl
+import cStringIO
+
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api'
+username = 'instituut01@admin.nl'
+password = 'qwerty'
+baseDir = 'd:/workspace'
+localRepository = 'local.xml'
+
+# Make export directory.
+if not os.path.exists(baseDir):
+    os.makedirs(baseDir)
+# Open local repository.
+etLocalRepository = ET.XML('<list></list>')
+if os.path.isfile(baseDir + '/' + localRepository):
+    etLocalRepository = ET.XML(open(baseDir + '/' + localRepository, 'rb').read())
+# Authentication.
+c = pycurl.Curl()
+c.setopt(pycurl.COOKIEFILE, '')
+c.setopt(pycurl.POST, 1)
+c.setopt(pycurl.URL, loginUrl)
+c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+c.perform()
+
+if 'help' in sys.argv[1:] or len(sys.argv[1:]) == 0:
+    print (
+           'ls [parent] [ignore_not_published] [ignore_local_repository]\n\n'
+           '    Show collections, bundles and baseContents.\n\n'
+           '  parent\n'
+           '    Extend parent ID with title and description.\n\n'
+           '  ignore_not_published\n'
+           '    Include not published items.\n\n'
+           '  ignore_local_repository\n'
+           '    Ignore local repository.\n\n'
+          )
+    sys.exit(0)
+
+def postRest(url):
+    c.setopt(pycurl.POST, 0)
+    c.setopt(pycurl.URL, url)
+    response = cStringIO.StringIO()
+    c.setopt(pycurl.WRITEFUNCTION, response.write)
+    c.perform()
+    return ET.XML(response.getvalue())
+
+meta = {}
+
+# Request all bundles.
+if 'ls' in sys.argv[1:]:
+    etBundles = postRest(apiUrl + '/bundle')
+    for etBundle in etBundles:
+        if etBundle.find('published').text == 'true' or 'inclucde_non_published_collections' in sys.argv[1:]:
+            collectionId = etBundle.find('collection/collection').attrib.get('id')
+            if collectionId in meta:
+                etBundle.find('collection/collection').attrib['title'] = meta[collectionId][0]
+                etBundle.find('collection/collection').attrib['description'] = meta[collectionId][1]   
+            else:
+                etCollection = postRest(apiUrl + '/collection/' + collectionId)
+                etBundle.find('collection/collection').attrib['title'] = etCollection.find('title').text
+                etBundle.find('collection/collection').attrib['description'] = etCollection.find('description').text
+                meta[collectionId] = (etCollection.find('title').text, etCollection.find('description').text)
+            print ET.tostring(etBundle)
+            
+            # Request baseContent
+            for etBaseContentId in etBundle.findall('content/baseContent'):
+                baseContentId = etBaseContentId.attrib.get('id')

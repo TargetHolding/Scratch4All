@@ -1,0 +1,45 @@
+====== Documentation: Ingest ======
+
+Files:
+  /ingest/ingest_file.php
+  /ingest/ingest_offset.php
+  /ingest/ingest_fields.php
+  /ingest/ingest_bash.php
+  /ingest/ingest_include.php
+  /dev/shm/<bookname>.sh
+  /include/ingest_params.tsv
+  /include/ingest_streamimage.php
+
+
+===== 1. /ingest/ingest_file.php =====
+Required for ingest offset and bashfile name
+Here you can select the image file (text photo scan) to use for setting offsets. The 'ingest_file.php' only shows the 'books' folder, subfolders with 'navis' in the name, 'Tiff' and 'Jpeg' folders, and '.tif' and'.jpg' file types. A '.jpg' file is will be used. A '.tiff' file will be copy-converted to .jpg. After selecting an image 'ingest_offset.php' starts automaticly. 
+
+===== 2. /ingest/ingest_offset.php ===== 
+Optional, submit can be pressed directly.
+An box with default offset values will be showed. (The default values come from ingest_params.tsv: left_softleft, left_softright, left_softtop and left_softbottom). The box can be resized to the correct offset of the selected page. To use the offset set the radio box to left- or right- page and submit. After submit, 'ingest_fields.php' starts automatically.
+
+===== 3. /ingest/ingest_fields.php =====
+Parameter fields shown in 'ingest_fields.php' are defined in 'ingest_params.tsv'.
+The values with a green indicator are manually inputted by the previous 'ingest_offset.php' page or by editing an input box.
+The values with a red indicator are the defaults defined in 'ingest_params.tsv'.
+The values with a black indicator are previous committed values form the bash file.
+The commit button is to commit to the bash file.
+The refresh diagnostics can be used after the bash file is execution is completed and results are expected.
+Ingest other page goes back to 'ingest_offset.php', and is meant to select an right page after a left one (or the other way around).
+
+===== 4. /dev/shm/<bookname>.sh =====
+Name and location from the bashfile.
+
+=====/ingest/ingest_include.php =====
+Used for setting paths.
+
+
+===== /include/ingest_params.tsv =====
+Tab separated file for parameters, defaults and descriptions. An default and description is optional for a parameter. Every parameter has a new line. Format:
+  <parameter name><TAB><parameter default value><TAB><description><LF>
+  <parameter name><TAB><parameter default value><TAB><description><LF>
+  
+===== /include/ingest_streamimage.php =====
+Required for showing the image in ingest_offset.php
+

@@ -1,0 +1,18 @@
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+
+xml1 = '<xml1><element1 id="1">x</element1><element1 id="2">x</element1></xml1>'
+xml2 = '<xml2><element2>bla2</element2></xml2>'
+
+etXml1 = ET.XML(xml1)
+etXml2 = ET.XML(xml2)
+
+
+
+etXml1.find('element1[@id=\'2\']').text=''
+etXml1.find('element1[@id=\'2\']').extend(etXml2)
+
+
+print xml.dom.minidom.parseString(ET.tostring(etXml1)).toprettyxml()
+
+

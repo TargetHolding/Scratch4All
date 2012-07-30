@@ -1,0 +1,36 @@
+import urllib2
+import cookielib
+from MultiPartForm import MultiPartForm
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.open(login_url, 'username=' + username + '&password=' + password)
+
+# Create the form with simple fields
+form = MultiPartForm()
+form.add_field('xml', '<baseContent><ownerBundle id="1"/><title>REST</title><description>REST</description></baseContent>')
+
+# Add a file
+form.add_file('file', 'Chrysanthemum.jpg', fileHandle=open ('D:/Chrysanthemum.jpg', 'rb'))
+
+# Build the request
+request = urllib2.Request(api_url + 'baseContent')
+request.get_method = lambda: 'POST'
+cj.add_cookie_header(request)
+body = str(form)
+request.add_header('Content-type', form.get_content_type())
+request.add_header('Content-length', len(body))
+
+request.add_data(body)
+
+print request.get_data()
+print urllib2.urlopen(request).read()
+
+
+
+

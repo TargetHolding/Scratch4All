@@ -1,0 +1,23 @@
+import os
+import os.path
+import xml.etree.ElementTree as ET
+
+path = 'D:/BOOK/'
+xmlFile = 'import.xml'
+scanExtentsion = '.jpg'
+
+fileNamesWithMetaData = []
+for etBaseContent in ET.parse(path + xmlFile).findall('baseContents/baseContent'):
+    fileNamesWithMetaData.append(etBaseContent.attrib.get('filename'))
+
+for item in os.listdir(path):
+    if os.path.isfile(path + item) and os.path.splitext(item)[1] == scanExtentsion:
+        if item in fileNamesWithMetaData:
+            print item
+        
+        
+
+
+
+
+

@@ -1,0 +1,32 @@
+import urllib2
+import cookielib
+import xml.etree.ElementTree as ET
+
+login_url = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+api_url = 'http://217.21.192.152:8080/catchplus/api/';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+data = 'username=' + username + '&password=' + password
+
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+opener.open(login_url, data).read()
+xmlWorkSpace = opener.open(api_url + 'workSpace').read()
+print xmlWorkSpace
+
+
+
+elementWorkSpace = ET.XML(xmlWorkSpace)
+
+for i1 in elementWorkSpace.findall('workSpace'):
+    print i1.tag + 'ID=' + i1.attrib.get('id')
+    for i2 in i1.findall('collection/collection'):
+        print '\t' + i2.tag + 'ID=' + i2.attrib.get('id')
+
+
+#for i in elementWorkSpace.findall('workSpace/collection/collection'):
+#    print i.attrib.get('id')
+
+
+
+
+

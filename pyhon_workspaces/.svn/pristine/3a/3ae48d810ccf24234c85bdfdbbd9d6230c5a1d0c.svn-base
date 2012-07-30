@@ -1,0 +1,159 @@
+import os
+import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import pycurl
+import cStringIO
+import sys
+
+# Note parents must be published as well
+requirePublished = False
+exportDir = 'd:/DIFF'
+xmlOld = 'old.xml'
+xmlUser = 'user.xml'
+loginUrl = 'http://217.21.192.152:8080/catchplus/auth/signIn'
+apiUrl = 'http://217.21.192.152:8080/catchplus/api';
+username = 'instituut01@admin.nl';
+password = 'qwerty';
+
+## Authentication.
+#c = pycurl.Curl()
+#c.setopt(pycurl.COOKIEFILE, '')
+#c.setopt(pycurl.POST, 1)
+#c.setopt(pycurl.URL, loginUrl)
+#c.setopt(pycurl.POSTFIELDS, 'username=' + username + '&password=' + password)
+#c.perform()
+## REST request all collections.
+#c.setopt(pycurl.POST, 0)
+#c.setopt(pycurl.URL, apiUrl + '/collection')
+#response = cStringIO.StringIO()
+#c.setopt(pycurl.WRITEFUNCTION, response.write)
+#c.perform()
+#etCollections = ET.XML(response.getvalue())
+#etNew = etCollections
+## Loop collections to get children bundles.
+#for etCollection in etCollections.findall('collection'):
+#    collectionId = etCollection.attrib.get('id')
+#    collectionTitle = etCollection.find('title').text
+#    print 'Collection title: ' + collectionTitle + ', id: ' + collectionId + '.'
+#    for etBundleId in etCollection.findall('bundle/bundle'):
+#        bundleId = etBundleId.attrib.get('id')
+#        # Get child bundle.
+#        c.setopt(pycurl.POST, 0)
+#        c.setopt(pycurl.URL, apiUrl + '/bundle/' + bundleId)
+#        response = cStringIO.StringIO()
+#        c.setopt(pycurl.WRITEFUNCTION, response.write)
+#        c.perform()
+#        etBundle = ET.XML(response.getvalue())
+#        if etBundle.tag != 'error': # No permission results in error.
+#            bundleTitle = etBundle.find('title').text
+#            # Copy child bundle to 'etNew'.
+#            etNew.find('collection/bundle/bundle[@id="' + bundleId + '"]').extend(etBundle)
+#            print '\tBundle title: ' + bundleTitle + ', id: ' + bundleId + '.'
+#            # Loop bundle to get children baseContents
+#            for etBaseContentId in ET.XML(ET.tostring(etBundle)).findall('content/baseContent'):
+#                baseContentId = etBaseContentId.attrib.get('id')
+#                # Get child baseContent.
+#                c.setopt(pycurl.POST, 0)
+#                c.setopt(pycurl.URL, apiUrl + '/baseContent/' + baseContentId)
+#                response = cStringIO.StringIO()
+#                c.setopt(pycurl.WRITEFUNCTION, response.write)
+#                c.perform()
+#                etBaseContent = ET.XML(response.getvalue())
+#                if etBaseContent.tag != 'error': # No permission results in error.
+#                    baseContentTitle = etBaseContent.find('title').text
+#                    # Copy child baseContent to 'etNew'.
+#                    etNew.find('collection/bundle/bundle/content/baseContent[@id="' + baseContentId + '"]').extend(etBaseContent)
+#                    print '\t\tBaseContent: ' + baseContentTitle + ', id: ' + baseContentId + '.'
+
+#TEMP
+etNew = ET.XML(open(exportDir + '/new.xml', 'rb').read())
+
+
+etOld = ET.XML(open(exportDir + '/' + xmlOld, 'rb').read())
+etUser = ET.XML('<list></list>')
+
+def addUserCollection(collectionId, strDownload='true'):
+    try:
+        etUser.find('collection[@id="' + collectionId + '"]').attrib.get('id')
+    except:
+        etUser.append(ET.XML('<collection id="' + collectionId + '" download="' + strDownload + '" title="' + etNew.find('collection[@id="' + collectionId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/description').text + '" published="' + etNew.find('collection[@id="' + collectionId + '"]/published').text + '"></collection>'))
+
+def addUserBundle(collectionId, bundleId, strDownload='true'):
+    addUserCollection(collectionId, 'false')
+    try:
+        etUser.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]').attrib.get('id')
+    except:
+        etUser.find('collection[@id="' + collectionId + '"]').append(ET.XML('<bundle id="' + bundleId + '" download="' + strDownload + '" title="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/description').text + '" published="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/published').text + '"></bundle>'))
+    
+def addUserBaseContent(collectionId, bundleId, baseContentId):
+    addUserCollection(collectionId, 'false')
+    addUserBundle(collectionId, bundleId, 'false')
+    etUser.find('collection[@id="' + collectionId + '"]/bundle[@id="' + bundleId + '"]').append(ET.XML('<baseContent id="' + baseContentId + '" download="true" title="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/content/baseContent[@id="' + baseContentId + '"]/title').text + '" description="' + etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/content/baseContent[@id="' + baseContentId + '"]/description').text + '" published="'+etNew.find('collection[@id="' + collectionId + '"]/bundle/bundle[@id="' + bundleId + '"]/content/baseContent[@id="' + baseContentId + '"]/published').text+'"></baseContent>'))
+
+oldCollectionIds = []
+oldBundleIds = []
+oldBaseContentIds = []
+for etOldCollection in etOld.findall('collection'):
+    oldCollectionIds.append(etOldCollection.attrib.get('id'))
+for etOldBundle in etOld.findall('collection/bundle/bundle'):
+    oldBundleIds.append(etOldBundle.attrib.get('id'))
+for etOldBaseContent in etOld.findall('collection/bundle/bundle/content/baseContent'):
+    oldBaseContentIds.append(etOldBaseContent.attrib.get('id'))
+    
+for etNewCollection in etNew.findall('collection'):
+    try:
+        if requirePublished == False or etNewCollection.find('published').text == 'true':
+            collectionId = etNewCollection.attrib.get('id')
+            if (collectionId not in oldCollectionIds):
+                addUserCollection(collectionId)
+    except:
+        continue;        
+for etNewBundle in etNew.findall('collection/bundle/bundle'):
+    try:
+        if requirePublished == False or  etNewBundle.find('published').text == 'true':
+            bundleId = etNewBundle.attrib.get('id')
+            if (bundleId not in oldBundleIds):
+                collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+                addUserBundle(collectionId, bundleId)        
+    except:
+        continue;
+for etNewBaseContent in etNew.findall('collection/bundle/bundle/content/baseContent'):
+    try:
+        if requirePublished == False or  etNewBaseContent.find('published').text == 'true':
+            baseContentId = etNewBaseContent.attrib.get('id')
+            if (baseContentId not in oldBaseContentIds):
+                bundleId = etNewBaseContent.find('bundle/bundle').attrib.get('id')
+                for etNewBundle in etNew.findall('collection/bundle/bundle'):
+                    if (etNewBundle.attrib.get('id') in bundleId):
+                        collectionId = etNewBundle.find('collection/collection').attrib.get('id')
+                        addUserBaseContent(collectionId, bundleId, baseContentId)
+    except:
+        continue;                
+
+def userContinue(question):
+    userInput = raw_input(question + " [y/n]: ")
+    if userInput == 'y':
+        return
+    elif userInput == 'n':
+        print 'User aborted.'
+        sys.exit(0)
+    else:
+        userContinue(question)
+
+open(exportDir + '/' + xmlUser, 'wb').write(xml.dom.minidom.parseString(ET.tostring(etUser)).toprettyxml())
+print 'The difference XML is saved to: "' + exportDir + '/' + xmlUser + '".'
+print 'In this XML change the attribute "download="true"" into "download="false"" if the download for this object is not required.'
+userContinue(question = "Continue download using: " + exportDir + '/' + xmlUser + "?")
+print 'TODO'
+
+etUser = ET.XML(open(exportDir + '/' + xmlUser, 'rb').read())
+for etUserCollection in etUser.findall('collection'):
+    print etUserCollection.attrib.get('id')
+    for etUserBundle in etUserCollection.findall('bundle'):
+        print '\t'+etUserBundle.attrib.get('id')
+        for etUserBaseContent in etUserBundle.findall('baseContent'):
+            print '\t\t'+etUserBaseContent.attrib.get('id')
+
+
+
+
